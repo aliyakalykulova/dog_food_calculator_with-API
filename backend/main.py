@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-
-import streamlit as st
 import pandas as pd
 from scipy.optimize import linprog  
 import numpy as np
@@ -16,22 +14,6 @@ from functions.train_models import combine_features
 from functions.train_models import train_ingredient_models
 from functions.train_models import train_nutrient_models
 from functions.train_models import  apply_category_masks
-
-from functions.choose_dog_characteristics import choose_dog_characteristics
-
-from functions.norm_kcal_nutr import kcal_calculate
-
-from functions.recommend_ingredients_nutrients import ingredient_recommendation
-from functions.recommend_ingredients_nutrients import nutrients_recommendation
-from functions.ingredients_choose import ingredients_choose  
-
-from functions.parametrs_for_linear_programming import maximize_function
-from functions.parametrs_for_linear_programming import ingredients_limits 
-from functions.parametrs_for_linear_programming import nutrients_limits 
-from functions.parametrs_for_linear_programming import lin_prog_parametrs
-
-from functions.calc_recipe_method_2 import calc_recipe
-from functions.show_results import show_resuts_success
 
 
 main_nutrs=['moisture_per', 'protein_per', 'carbohydrate_per', 'fats_per']
@@ -55,6 +37,29 @@ ridge_models, scalers = train_nutrient_models(food_df[food_df["food_form"]=="wet
 
 # ---- Инициализация глобальных переменных (init_global.py)
 init_global()
+
+
+
+
+
+from functions.choose_dog_characteristics import choose_dog_characteristics
+
+from functions.norm_kcal_nutr import kcal_calculate
+
+from functions.recommend_ingredients_nutrients import ingredient_recommendation
+from functions.recommend_ingredients_nutrients import nutrients_recommendation
+from functions.ingredients_choose import ingredients_choose  
+
+from functions.parametrs_for_linear_programming import maximize_function
+from functions.parametrs_for_linear_programming import ingredients_limits 
+from functions.parametrs_for_linear_programming import nutrients_limits 
+from functions.parametrs_for_linear_programming import lin_prog_parametrs
+
+from functions.calc_recipe_method_2 import calc_recipe
+from functions.show_results import show_resuts_success
+
+
+breed_list = sorted(disease_df["name_breed"].unique())
 
 # ---- Ввод характеристик собаки (choose_dog_characteristics.py)
 user_breed, breed_size, avg_wight, age_type_categ = choose_dog_characteristics(disease_df)
