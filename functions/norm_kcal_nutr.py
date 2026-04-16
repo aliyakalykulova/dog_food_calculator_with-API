@@ -59,6 +59,8 @@ def kcal_calculate(age_type, expected,weight,age,age_metric, reproductive_status
    else:
 	  # --- Расчёт калорий для щенков
       if age_type==age_category_types[0]:
+		 if age_metric==metrics_age_types[0]:
+		    age=age*12
          if age<2:                         # --- Щенки до 2 месяцев            
             kcal=25 * weight 
             formula= r"kcal = 25 \cdot вес"
