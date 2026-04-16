@@ -9,24 +9,16 @@ berem_time_types=["первые 4 недедели беременности","п
 lact_time_types=["1 неделя","2 неделя","3 неделя","4 неделя"]
 age_category_types=["puppy","adult","senior"]
 
-activity_level_cat_1 = ["Пассивный (гуляеет на поводке менее 1ч/день)", "Средний1 (1-3ч/день, низкая активность)",
+activity_for_adult = ["Пассивный (гуляеет на поводке менее 1ч/день)", "Средний1 (1-3ч/день, низкая активность)",
                         "Средний2 (1-3ч/день, высокая активность)", "Активный (3-6ч/день, рабочие собаки, например, овчарки)",
                         "Высокая активность в экстремальных условиях (гонки на собачьих упряжках со скоростью 168 км/день в условиях сильного холода)",
                         "Взрослые, склонные к ожирению"]
-activity_level_cat_2 = ["Пассивный", "Средний", "Активный"]
+activity_for_senior = ["Пассивный", "Средний", "Активный"]
 
 
 # ---- Расчёт нормы суточного потребления калорий
-def kcal_calculate(age_type, expected):
-   reproductive_status=st.session_state.select_reproductive_status
-   berem_time=st.session_state.show_res_berem_time
-   num_pup=st.session_state.show_res_num_pup
-   L_time=st.session_state.show_res_lact_time
-   weight=st.session_state.weight_sel
-   activity_level=st.session_state.activity_level_sel
-   age=st.session_state.age_sel
-   user_breed=st.session_state.user_breed
-    
+def kcal_calculate(age_type, expected,weight,age,age_metric, reproductive_status,berem_time,num_pup,L_time,activity_for_adult,activity_for_senior,user_breed):
+       
    formula=""    # --- Вывод формулы, по которой выполнен расчёт калорий
    page=""       # --- Ссылка на страницу онлайн-документа FEDIAF, где была взята формула 
 
@@ -82,11 +74,11 @@ def kcal_calculate(age_type, expected):
 			 
 	  # --- Расчёт калорий для пожилых собак
       elif age_type==age_category_types[2]:
-         if activity_level==activity_level_cat_2[0]:    # --- Пасивные
+         if activity_for_senior==activity_for_senior[0]:    # --- Пасивные
             kcal=80*(weight**0.75)
             formula= r"kcal = 80  \cdot вес^{0.75}"
             page = "54"
-         elif activity_level==activity_level_cat_2[1]:  # --- Среднеактивные
+         elif activity_for_senior==activity_for_senior[1]:  # --- Среднеактивные
             kcal=95*(weight**0.75)
             formula= r"kcal = 95  \cdot вес^{0.75}"
             page = "54"    
@@ -97,23 +89,23 @@ def kcal_calculate(age_type, expected):
 			 
 	  # --- Расчёт калорий для взрослых собак
       else:   
-         if activity_level==activity_level_cat_1[0]:     # --- Пасивные
+         if activity_for_adult==activity_for_adult[0]:     # --- Пасивные
             kcal=95*(weight**0.75)
             formula= r"kcal = 95  \cdot вес^{0.75}"
             page = "55"
-         elif activity_level==activity_level_cat_1[1]:   # --- Низкоактивные
+         elif activity_for_adult==activity_for_adult[1]:   # --- Низкоактивные
             kcal=110*(weight**0.75)
             formula= r"kcal = 110  \cdot вес^{0.75}"
             page = "55"
-         elif activity_level==activity_level_cat_1[2]:   # --- Среднеактивные
+         elif activity_for_adult==activity_for_adult[2]:   # --- Среднеактивные
             kcal=125*(weight**0.75)
             formula= r"kcal = 125  \cdot вес^{0.75}"
             page = "55"
-         elif activity_level==activity_level_cat_1[3]:   # --- Активные
+         elif activity_for_adult==activity_for_adult[3]:   # --- Активные
             kcal=160*(weight**0.75)
             formula= r"kcal = 160  \cdot вес^{0.75}"
             page = "55"
-         elif activity_level==activity_level_cat_1[4]:  # --- Очень активные (гонки в собачьей упряжке в экстремальных условиях)
+         elif activity_for_adult==activity_for_adult[4]:  # --- Очень активные (гонки в собачьей упряжке в экстремальных условиях)
             kcal=860*(weight**0.75)
             formula= r"kcal = 860  \cdot вес^{0.75}"
             page = "55"
