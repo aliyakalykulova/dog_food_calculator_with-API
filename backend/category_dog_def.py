@@ -1,3 +1,5 @@
+age_category_types=["puppy","adult","senior"]
+size_types=["small",  "medium",  "large"]
 
 # ---- Определение категории размера породы на основе стандартного веса собаки
 def size_category(df):
