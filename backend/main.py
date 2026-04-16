@@ -37,7 +37,8 @@ ridge_models, scalers = train_nutrient_models(food_df[food_df["food_form"]=="wet
 
 # ---- Инициализация глобальных переменных (init_global.py)
 init_global()
-
+match = info.loc[info["name_disease"] == selected_disease, "name_disorder"]
+disorder_type = match.iloc[0] if not match.empty else selected_disease
 
 
 
