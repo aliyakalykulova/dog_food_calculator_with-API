@@ -11,32 +11,32 @@ def init_global():
       st.session_state.show_result_2 = False      # --- Отображение финальной рецептуры после нажатия кнопки расчёта рецептуры
 
    if "age_sel" not in st.session_state:
-      st.session_state.age_sel = None           # --- Возраст собаки
+      st.session_state.age_sel = 0           # --- Возраст собаки
    if "age_metr_sel" not in st.session_state:
-      st.session_state.age_metr_sel = None     # --- Единица измерения возраста (месяцы / годы)
+      st.session_state.age_metr_sel = ""     # --- Единица измерения возраста (месяцы / годы)
    if "weight_sel" not in st.session_state:
-      st.session_state.weight_sel = None       # ---  Вес собаки (кг)
+      st.session_state.weight_sel = 0       # ---  Вес собаки (кг)
    if "activity_level_sel" not in st.session_state:
-      st.session_state.activity_level_sel = None    # --- Уровень активности собаки
+      st.session_state.activity_level_sel = ""    # --- Уровень активности собаки
    if "select_gender" not in st.session_state:
-      st.session_state.select_gender = None             # --- Пол собаки (самец/самка)
+      st.session_state.select_gender = ""             # --- Пол собаки (самец/самка)
 	   
    if "select_reproductive_status" not in st.session_state:
-      st.session_state.select_reproductive_status = None   # --- Репродуктивный статус (нет, беременность, лактация)
+      st.session_state.select_reproductive_status = ""   # --- Репродуктивный статус (нет, беременность, лактация)
    if "show_res_berem_time" not in st.session_state:
-      st.session_state.show_res_berem_time = None       # --- Срок беременности
+      st.session_state.show_res_berem_time = ""       # --- Срок беременности
    if "show_res_lact_time" not in st.session_state:
-      st.session_state.show_res_lact_time = None       # --- Срок лактации
+      st.session_state.show_res_lact_time = ""       # --- Срок лактации
    if "show_res_num_pup" not in st.session_state:
-      st.session_state.show_res_num_pup = None          # --- Количество щенков 
+      st.session_state.show_res_num_pup = 0          # --- Количество щенков 
 	
    if "user_breed" not in st.session_state: 
-      st.session_state.user_breed = None        # --- Порода собаки
+      st.session_state.user_breed = ""        # --- Порода собаки
    if "disorder" not in st.session_state:
-      st.session_state.disorder = None        # --- Заболевание 
+      st.session_state.disorder = ""        # --- Заболевание 
 		
    if "kkal_sel" not in st.session_state:
-      st.session_state.kkal_sel = None         # --- Суточная потребность в калориях
+      st.session_state.kkal_sel = 0         # --- Суточная потребность в калориях
 				
    if "prev_ingr_ranges" not in st.session_state:
       st.session_state.prev_ingr_ranges = []     # --- Соотношение ингредиентов
@@ -47,4 +47,6 @@ def init_global():
       st.session_state.selected_ingredients = set()         # --- Список ингредиентов
    if st.session_state.show_result_1 == False: 
       st.session_state.selected_ingredients = set()
+
+
 		
