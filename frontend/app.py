@@ -1,6 +1,8 @@
 import requests
 import streamlit as st
-from choose_dog_characteristics import choose_dog_characteristics
+from choose_dog_characteristics import choose_dog_characteristics_base
+from choose_dog_characteristics import choose_dog_characteristics_additional
+
 
 API_URL = "http://localhost:8000"  # потом поменяем при деплое
 
@@ -9,17 +11,41 @@ st.header("Рекомендации по питанию собак")
 
 st.sidebar.title("🐶 Smart Dog Diet Advisor")
 st.sidebar.write("Select breed + disorder → get personalized food suggestions")
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=80)   
-  
-# ---- Ввод характеристик собаки (choose_dog_characteristics.py)
- weight, age, age_metric, gender,  repro_status, berem_time, lact_time, num_puppy,  activity_for_adult, activity_for_senior, breed, disease,= choose_dog_characteristics(disease_df)
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=80)  
 
-breed_size, avg_wight = size_category(disease_df[disease_df["name_breed"] == breed])  # --- Присвоение категории размера породы
-age_type_categ = age_type_category(breed_size, age ,age_metric)     # --- Присвоение возрастной категории
+# --- получаем список пород
+breed_list_resp = requests.get(f"{API_URL}/breed_list")
+breed_list = breed_list_resp.json()["breed_list"]
+
+# --- ввод пользователя
+weight, age, age_metric, gender, repro_status, berem_time, lact_time, num_puppy, breed = choose_dog_characteristics_base(breed_list)
+
+# --- запрос к API
+response = requests.post(
+    f"{API_URL}/categor_def",
+    json={
+        "breed": breed,
+        "age": age,
+        "age_metric": age_metric
+    }
+)
+
+dog_breed_characteristic = response.json()
+
+# --- разбор ответа
+age_category = dog_breed_characteristic["age_category"]
+disease = dog_breed_characteristic["disease"]
+avg_weight = dog_breed_characteristic["avg_weight"]
+breed_size = dog_breed_characteristic["breed_size"]
+
+# --- дополнительные параметры
+activity_for_adult, activity_for_senior, disease = choose_dog_characteristics_additional(age_category, disease)
+
+
 
 if st.button("Составить рекомендации"):
     response = requests.post(
-        f"{API_URL}/recommend",
+        f"{API_URL}/recomendations",
         json={
 			"weight": weight,
             "age": age,
@@ -33,10 +59,9 @@ if st.button("Составить рекомендации"):
 			"activity_for_senior": activity_for_senior,
 			"breed": breed,
 			"disease":disease,
-
             "size": breed_size,
-            "avg_weight": avg_wight,
-            "age_category": age_type_categ
+            "avg_weight": avg_weight,
+            "age_category": age_category
         }
     )
     recomendations = response.json()
@@ -52,7 +77,7 @@ if st.button("Составить рекомендации"):
 
     # ---- Интерфейс для редактирования пределов (min, max) содержания ингредиентов и нутриентов в корме (parametrs_for_linear_programming.py)
     ingr_ranges= ingredients_limits(ingredient_names)
-    nutr_ranges = nutrients_limits(recomendations[nutrient_preds])
+    nutr_ranges = nutrients_limits(recomendations["nutrient_preds"])
 			 
 	# ---- Выбор нутриентов для максимизации в корме (параметры линейного программирования) (parametrs_for_linear_programming.py) 
     maximaze_nutrs = maximize_function(recomendations["maximize_func"])
