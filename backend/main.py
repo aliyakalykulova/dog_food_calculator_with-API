@@ -5,7 +5,6 @@ import pandas as pd
 from scipy.optimize import linprog  
 import numpy as np
 
-from functions.init_global import init_global
 from functions.connect_database import  load_data
 
 from functions.train_models import build_text_pipeline
@@ -15,8 +14,26 @@ from functions.train_models import train_ingredient_models
 from functions.train_models import train_nutrient_models
 from functions.train_models import  apply_category_masks
 
+from category_dog_def import size_category
+from category_dog_def import age_type_category
+
+from functions.norm_kcal_nutr import kcal_calculate
+
+from functions.recommend_ingredients_nutrients import ingredient_recommendation
+from functions.recommend_ingredients_nutrients import nutrients_recommendation
+from functions.ingredients_choose import ingredients_choose  
+
+from functions.parametrs_for_linear_programming import maximize_function
+from functions.parametrs_for_linear_programming import ingredients_limits 
+from functions.parametrs_for_linear_programming import nutrients_limits 
 
 main_nutrs=['moisture_per', 'protein_per', 'carbohydrate_per', 'fats_per']
+
+standard_care_map = {
+    "puppy": "Уход за щенками",
+    "adult": "Уход за взрослыми",
+    "senior": "Уход за пожилыми"
+}
 
 # ---- Загрузка данных из базы данных (connect_database.py)
 food_df, disease_df, df_standart, ingredirents_df,nutrients_transl= load_data()
@@ -35,85 +52,87 @@ X_categorical_wet=apply_category_masks(X_categorical_wet,encoder_wet)
 X_combined_wet = combine_features(X_text_reduced_wet, X_categorical_wet)
 ridge_models, scalers = train_nutrient_models(food_df[food_df["food_form"]=="wet food"], X_combined_wet)
 
-# ---- Инициализация глобальных переменных (init_global.py)
-init_global()
-match = info.loc[info["name_disease"] == selected_disease, "name_disorder"]
-disorder_type = match.iloc[0] if not match.empty else selected_disease
 
 
+app = FastAPI()
+
+# ---- модель запроса
+class CategorDefRequest(BaseModel):
+    breed: str
+    age: int
+    age_metric: str
+
+# ---- список пород (исправили на GET)
+@app.get("/breed_list")
+async def get_breed_list():
+    breed_list = sorted(disease_df["name_breed"].unique())
+    return {"breed_list": breed_list}
+
+# ---- расчет характеристик
+@app.post("/categor_def")
+async def categor_def(request: CategorDefRequest):
+    breed = request.breed
+    age = request.age
+    age_metric = request.age_metric
+
+    breed_size, avg_weight = size_category(
+        disease_df[disease_df["name_breed"] == breed]
+    )
+
+    age_category = age_type_category(breed_size, age, age_metric)
+    info = disease_df[disease_df["name_breed"] == breed]
+    st_c = standard_care_map.get(age_category)
+    diseases = [
+        dis for dis in info["name_disease"].unique().tolist()
+        if dis not in standard_care_map.values() or dis == st_c
+    ]
+
+    return {
+        "age_category": age_category,
+        "breed_size": breed_size,
+        "avg_weight": avg_weight,
+        "disease": diseases
+    }
 
 
-from functions.choose_dog_characteristics import choose_dog_characteristics
+# ---- модель запроса
+class RecomendRequest(BaseModel):
+    weight :float
+    age :int
+    age_metric : str
+	gender: str
 
-from functions.norm_kcal_nutr import kcal_calculate
+@app.post("/recomendations")
+async def categor_def(request: RecomendRequest):
 
-from functions.recommend_ingredients_nutrients import ingredient_recommendation
-from functions.recommend_ingredients_nutrients import nutrients_recommendation
-from functions.ingredients_choose import ingredients_choose  
+    weight = request.weight
+    age = request.age
+    age_metric = request.age_metric
+	gender=request.gender
+    repro_status=request.repro_status
+	berem_time=request.berem_time
+	L_time=request.lact_time
+	num_pup=request.num_puppy
+	activity_for_adult=request.activity_for_adult
+	activity_for_senior=request.activity_for_senior
+	breed=request.breed
+	disease=request.disease
+    breed_size=request.breed_size
+    avg_weight=request.avg_weight
+    age_category=request.age_category
 
-from functions.parametrs_for_linear_programming import maximize_function
-from functions.parametrs_for_linear_programming import ingredients_limits 
-from functions.parametrs_for_linear_programming import nutrients_limits 
-from functions.parametrs_for_linear_programming import lin_prog_parametrs
+	info = disease_df[disease_df["name_breed"] == breed]
+    match = info.loc[info["name_disease"] == disease, "name_disorder"]
+    disorder_type = match.iloc[0] if not match.empty else disease
 
-from functions.calc_recipe_method_2 import calc_recipe
-from functions.show_results import show_resuts_success
+    kcal=kcal_calculate(age_type_categ, avg_wight,weight,age,age_metric, repro_status,berem_time,num_pup,L_time,activity_for_adult,activity_for_senior,breed)
 
+    # --- Вычисление рекомендаций ингредиентов и количества нутриентов с помощью обученных моделей (recommend_ingredients_nutrients.py)
+    ingredients_finish,keywords=ingredient_recommendation(ingredient_models,breed_size, age_type_categ,disorder_type, selected_disease,vectorizer,svd,encoder, df_standart)
+    nutrient_preds = nutrients_recommendation(vectorizer_wet,keywords,svd_wet,encoder_wet, breed_size, age_type_categ, ridge_models,scalers )
 
-breed_list = sorted(disease_df["name_breed"].unique())
-
-# ---- Ввод характеристик собаки (choose_dog_characteristics.py)
-user_breed, breed_size, avg_wight, age_type_categ = choose_dog_characteristics(disease_df)
-
-standard_care_map = {
-    "puppy": "Уход за щенками",
-    "adult": "Уход за взрослыми",
-    "senior": "Уход за пожилыми"
-}
-st_c = standard_care_map.get(age_type_categ)
-
-if user_breed:
-   info = disease_df[disease_df["name_breed"] == user_breed]
-   if not info.empty:
-	  # ---- Вывод списка возможных заболеваний в зависимости от породы
-      diseases = [  dis for dis in info["name_disease"].unique().tolist()
-                    if dis not in standard_care_map.values() or dis == st_c]
-      selected_disease = st.selectbox("Заболевание:", diseases)
-      match = info.loc[info["name_disease"] == selected_disease, "name_disorder"]
-      disorder_type = match.iloc[0] if not match.empty else selected_disease
-
-	  # ---- При изменении данных о собаке (порода, заболевание) сбрасываются текущие рекомендации корма 
-      if user_breed != st.session_state.user_breed or selected_disease!= st.session_state.disorder:
-         st.session_state.user_breed = user_breed
-         st.session_state.disorder = selected_disease
-         st.session_state.show_result_1 = False
-         st.session_state.show_result_2 = False
-            
-      # ---- Кнопка расчёта рекомендаций корма (калории, ингредиенты, нутриенты)
-      if st.button("Составить рекомендации"):
-         st.session_state.show_result_1 = True
-	 
-      if st.session_state.show_result_1:
-	     # ---- Расчёт суточной потребности в калориях по формулам FEDIAF (norm_kcal_nutr.py)
-         kcal =kcal_calculate( age_type_categ, avg_wight)
-         metobolic_energy = int(round(st.number_input("Киллокаллории в день", min_value=0.0, step=0.1,  value=round(kcal,1) ),1))
-		 
-		 # --- При изменении значения калорий сбрасывается рассчитанная рецептура корма	
-         if st.session_state.kkal_sel!=metobolic_energy:
-            st.session_state.kkal_sel=metobolic_energy
-            st.session_state.show_result_1 = True
-            st.session_state.show_result_2 = False
-
-		 # --- Вычисление рекомендаций ингредиентов и количества нутриентов с помощью обученных моделей (recommend_ingredients_nutrients.py)
-         ingredients_finish,keywords=ingredient_recommendation(ingredient_models,breed_size, age_type_categ,disorder_type, selected_disease,vectorizer,svd,encoder, df_standart)
-         nutrient_preds = nutrients_recommendation(vectorizer_wet,keywords,svd_wet,encoder_wet, breed_size, age_type_categ, ridge_models,scalers )
-         
-         if len(ingredients_finish)>0: 
-			# ---- Интерфейс для редактирования списка ингредиентов пользователем (ingredients_choose.py)
-            ingredirents_df, ingredient_names,food = ingredients_choose(ingredirents_df,ingredients_finish)
-			 
-			# ---- Выбор нутриентов для максимизации в корме (параметры линейного программирования) (parametrs_for_linear_programming.py) 
-            maximaze_nutrs = maximize_function(food_df, nutrient_preds)
+    # ---- Выбор нутриентов для максимизации в корме (параметры линейного программирования) (parametrs_for_linear_programming.py) 
+    maximaze_nutrs = maximize_function(food_df, nutrient_preds)
 			 
             if ingredient_names:
 			   # ---- Установка пределов (min, max) содержания ингредиентов и нутриентов в корме (parametrs_for_linear_programming.py)
@@ -142,6 +161,33 @@ if user_breed:
                   factor=101/highest
                   ingr_ranges_2=[(low, high*factor) for (low, high) in ingr_ranges]
 				
+
+
+    return {
+        "kcal": kcal,
+        "ingredient_rec": ingredient_rec,
+        "nutrient_preds": nutrient_preds,
+        "maximize_func": maximize_func
+    }
+
+
+
+   
+
+
+
+
+
+from functions.parametrs_for_linear_programming import lin_prog_parametrs
+
+from functions.calc_recipe_method_2 import calc_recipe
+from functions.show_results import show_resuts_success
+
+
+
+
+
+		
 			   # --- Подготовка параметров на основе заданных условий для расчёта рецептуры методом линейного программирования (parameters_for_linear_programming.py) 	   
                A, b, A_eq, b_eq,selected_maximize,f,bounds = lin_prog_parametrs(food,ingredient_names,nutr_ranges,ingr_ranges_2,maximaze_nutrs,nutrients_transl)
              
