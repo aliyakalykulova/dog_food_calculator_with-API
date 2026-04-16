@@ -16,8 +16,12 @@ def init_global():
       st.session_state.age_metr_sel = ""     # --- Единица измерения возраста (месяцы / годы)
    if "weight_sel" not in st.session_state:
       st.session_state.weight_sel = 0       # ---  Вес собаки (кг)
-   if "activity_level_sel" not in st.session_state:
-      st.session_state.activity_level_sel = ""    # --- Уровень активности собаки
+	   
+   if "activity_for_adult" not in st.session_state:
+      st.session_state.activity_for_adult = ""    # --- Уровень активности собаки
+   if "activity_for_senior" not in st.session_state:
+      st.session_state.activity_for_senior = ""    # --- Уровень активности собаки
+	
    if "select_gender" not in st.session_state:
       st.session_state.select_gender = ""             # --- Пол собаки (самец/самка)
 	   
