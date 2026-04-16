@@ -15,53 +15,15 @@ activity_level_cat_1 = ["Пассивный (гуляеет на поводке 
                         "Взрослые, склонные к ожирению"]
 activity_level_cat_2 = ["Пассивный", "Средний", "Активный"]
 
-# ---- Определение категории размера породы на основе стандартного веса собаки
-def size_category(df):
-   w = (df["min_weight"].iloc[0] + df["max_weight"].iloc[0]) / 2  
-   if w <= 10:
-      return size_types[0],w    # --- Категория "small"
-   elif w <= 25:
-      return size_types[1],w    # --- Категория "medium"
-   else :
-      return size_types[2],w    # --- Категория "large"
+standard_care_map = {
+    "puppy": "Уход за щенками",
+    "adult": "Уход за взрослыми",
+    "senior": "Уход за пожилыми"
+}
 
-# ---- Определение возрастной категории на основе возраста и категории размера породы
-def age_type_category(size_categ, age ,age_metric):
-   # --- Перевод единицы измерения возраста из лет в месяцы
-   if age_metric==metrics_age_types[0]:     
-      age=age*12
-     
-   # --- Для мелких пород собак  
-   if size_categ==size_types[0]:
-      if age>=1*12 and age<=8*12:       # --- Категория "щенок"
-         return age_category_types[1]
-      elif age<1*12:                    # --- Категория "взрослый"
-         return age_category_types[0]
-      elif age>8*12:                    # --- Категория "пожилой"
-         return age_category_types[2]
-        
-   # --- Для средних пород собак       
-   elif size_categ==size_types[2]:
-      if age>=15 and age<=7*12  :       # --- Категория "щенок"
-         return age_category_types[1]   
-      elif age<15:                      # --- Категория "взрослый" 
-         return age_category_types[0]
-      elif age>7*12:                    # --- Категория "пожилой"
-         return age_category_types[2]
-        
-   # --- Для крупных пород собак             
-   else:
-      if age<=6*12 and age>=24:         # --- Категория "щенок"
-         return age_category_types[1]
-      elif age<24:                      # --- Категория "взрослый" 
-         return age_category_types[0]
-      elif age>6*12:                    # --- Категория "пожилой"
-         return age_category_types[2]
-               
 # ---- Интерфейс выбора характеристик собаки
 def choose_dog_characteristics(disease_df):
-   st.set_page_config(page_title="Рекомендации по питанию собак", layout="centered")
-   st.header("Рекомендации по питанию собак")
+
    col1, col0 ,col2, col3 = st.columns([3,1, 3, 2]) 
    with col1:
       weight = st.number_input("Вес собаки (в кг)", min_value=0.0, step=0.1)   # --- Ввод веса собаки
@@ -119,14 +81,8 @@ def choose_dog_characteristics(disease_df):
             st.session_state.show_result_1 = False
             st.session_state.show_result_2 = False 
               
-   st.sidebar.title("🐶 Smart Dog Diet Advisor")
-   st.sidebar.write("Select breed + disorder → get personalized food suggestions")
-   st.sidebar.image("https://cdn-icons-png.flaticon.com/512/616/616408.png", width=80)   
-  
    breed_list = sorted(disease_df["name_breed"].unique())
    user_breed = st.selectbox("Порода собаки:", breed_list)   # --- Ввод породы собаки
-   breed_size, avg_wight = size_category(disease_df[disease_df["name_breed"] == user_breed])  # --- Присвоение категории размера породы
-   age_type_categ = age_type_category(breed_size, age ,age_metric)     # --- Присвоение возрастной категории
 
    # --- При изменении возраста, единицы измерения возраста или веса сбрасываются рассчитанные рекомендации к корму
    if age!=st.session_state.age_sel or age_metric!=st.session_state.age_metric or weight != st.session_state.weight_sel:
@@ -155,5 +111,17 @@ def choose_dog_characteristics(disease_df):
          st.session_state.activity_level_sel=activity_level_2
          st.session_state.show_result_1 = False
          st.session_state.show_result_2 = False
+
+st_c = standard_care_map.get(age_type_categ)
+
+if user_breed:
+   info = disease_df[disease_df["name_breed"] == user_breed]
+   if not info.empty:
+	  # ---- Вывод списка возможных заболеваний в зависимости от породы
+      diseases = [  dis for dis in info["name_disease"].unique().tolist()
+                    if dis not in standard_care_map.values() or dis == st_c]
+      selected_disease = st.selectbox("Заболевание:", diseases)
+      match = info.loc[info["name_disease"] == selected_disease, "name_disorder"]
+      disorder_type = match.iloc[0] if not match.empty else selected_disease
           
    return user_breed, breed_size, avg_wight, age_type_categ
